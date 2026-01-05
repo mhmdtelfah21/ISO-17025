@@ -1,0 +1,103 @@
+
+<header class="flex items-center justify-between p-4 border-b border-slate-200">
+  <h3 class="text-xl font-semibold">
+    Metrology Data for: <span class="text-sky-600">{{ parameter().name }}</span>
+  </h3>
+  <button (click)="cancel.emit()" class="text-slate-400 hover:text-slate-600">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+  </button>
+</header>
+<div class="p-6 overflow-y-auto">
+  <form (ngSubmit)="submitForm()" class="space-y-4">
+    <div class="flex justify-between items-center">
+      <h4 class="text-lg font-semibold">Active Profile</h4>
+      @if (!dataService.isReadOnly()) {
+        <button type="button" (click)="submitForm()" class="px-4 py-1.5 bg-sky-100 text-sky-700 text-sm font-semibold rounded-md hover:bg-sky-200 transition-colors">
+          Save Profile
+        </button>
+      }
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="device" class="block text-sm font-medium text-slate-700">Device Name</label>
+        <input type="text" id="device" [(ngModel)]="formState().device" name="device" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+      <div>
+        <label for="serial" class="block text-sm font-medium text-slate-700">Serial Number</label>
+        <input type="text" id="serial" [(ngModel)]="formState().serial" name="serial" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+      <div>
+        <label for="date" class="block text-sm font-medium text-slate-700">Calibration Date</label>
+        <input type="date" id="date" [(ngModel)]="formState().date" name="date" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+      <div>
+        <label for="certUnc" class="block text-sm font-medium text-slate-700">Certificate Uncertainty (U)</label>
+        <input type="number" step="any" id="certUnc" [(ngModel)]="formState().certUnc" name="certUnc" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+        <div>
+        <label for="kFactor" class="block text-sm font-medium text-slate-700">Coverage Factor (k)</label>
+        <input type="number" step="any" id="kFactor" [(ngModel)]="formState().kFactor" name="kFactor" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+      <div>
+        <label for="resolution" class="block text-sm font-medium text-slate-700">Resolution</label>
+        <input type="number" step="any" id="resolution" [(ngModel)]="formState().resolution" name="resolution" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+        <div>
+        <label for="drift" class="block text-sm font-medium text-slate-700">Annual Drift</label>
+        <input type="number" step="any" id="drift" [(ngModel)]="formState().drift" name="drift" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+      <div>
+        <label for="accuracy" class="block text-sm font-medium text-slate-700">Accuracy Value</label>
+        <input type="number" step="any" id="accuracy" [(ngModel)]="formState().accuracy" name="accuracy" [readonly]="dataService.isReadOnly()" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-50 read-only:text-slate-500">
+      </div>
+    </div>
+  </form>
+
+  <div class="mt-6 pt-6 border-t">
+    <h4 class="text-lg font-semibold mb-2">Calibration History</h4>
+    @if (calibrationHistory().length > 0) {
+      <div class="max-h-40 overflow-y-auto border rounded-md">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100 text-left sticky top-0">
+            <tr>
+              <th class="p-2 font-semibold text-slate-700">Date</th>
+              <th class="p-2 font-semibold text-slate-700">Device</th>
+              <th class="p-2 font-semibold text-slate-700">Serial No.</th>
+              <th class="p-2 font-semibold text-slate-700">Cert. U</th>
+              <th class="p-2 font-semibold text-slate-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white">
+            @for (cal of calibrationHistory(); track cal.id) {
+              <tr class="border-b border-slate-200 last:border-b-0">
+                <td class="p-2 text-slate-600">{{ cal.date }}</td>
+                <td class="p-2">{{ cal.device }}</td>
+                <td class="p-2 text-slate-600">{{ cal.serial }}</td>
+                <td class="p-2 font-mono">{{ cal.certUnc }}</td>
+                <td class="p-2">
+                  @if (!dataService.isReadOnly()) {
+                    <button (click)="remove.emit(cal.id)" class="text-red-600 hover:text-red-800 font-semibold text-xs">Remove</button>
+                  } @else {
+                     <span class="text-slate-400 text-xs">Locked</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="text-sm text-slate-500 text-center py-4">No past calibration records found for this parameter.</p>
+    }
+  </div>
+</div>
+<footer class="flex justify-end items-center gap-4 p-4 bg-slate-50 border-t border-slate-200">
+  <button type="button" (click)="cancel.emit()" class="px-4 py-2 bg-white text-slate-700 font-semibold border border-slate-300 rounded-md hover:bg-slate-50 transition-colors">
+    @if (!dataService.isReadOnly()) { Cancel } @else { Close }
+  </button>
+  @if (!dataService.isReadOnly()) {
+    <button type="button" (click)="submitForm()" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+      Save and Set Active
+    </button>
+  }
+</footer>

@@ -1,0 +1,614 @@
+
+<div>
+  <!-- VIEW: Workbench -->
+  @if (dataService.currentView() === 'workbench') {
+    <header class="mb-6 flex justify-between items-center">
+      <div>
+        <h2 class="text-3xl font-bold text-slate-900">Uncertainty Calculator</h2>
+        <p class="text-slate-500 mt-1">Manage calibrations, input measurements, and view results.</p>
+      </div>
+      <div class="text-right">
+         <span class="text-xs text-slate-400 font-mono" *ngIf="currentProjectId()">Project ID: {{ currentProjectId()?.substring(0,8) }}...</span>
+         @if (dataService.isReadOnly()) {
+           <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">Read Only Mode</span>
+         }
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-slate-200 overflow-x-auto">
+      <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+        <button (click)="activeTab.set('projects')"
+                [class]="activeTab() === 'projects' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="whitespace-nowrap flex items-center py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+          Projects
+        </button>
+
+        <button (click)="activeTab.set('parameters')"
+                [class]="activeTab() === 'parameters' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="whitespace-nowrap flex items-center py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" /></svg>
+          Parameters
+        </button>
+
+        <button (click)="activeTab.set('measurements')"
+                [class]="activeTab() === 'measurements' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="whitespace-nowrap flex items-center py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v10H5V5z" clip-rule="evenodd" /></svg>
+          Measurement Analysis
+        </button>
+
+        <button (click)="activeTab.set('results')"
+                [class]="activeTab() === 'results' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="whitespace-nowrap flex items-center py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h4a1 1 0 100-2H7zm0 4a1 1 0 100 2h4a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>
+          Results
+        </button>
+        
+         <button (click)="activeTab.set('documentation')"
+                [class]="activeTab() === 'documentation' ? 'border-sky-500 text-sky-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                class="whitespace-nowrap flex items-center py-3 px-1 border-b-2 font-medium text-sm transition-colors">
+          Documentation
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="mt-6">
+      @switch (activeTab()) {
+        @case ('projects') {
+          <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-lg font-semibold text-slate-800">Project History</h3>
+              @if (!dataService.isReadOnly()) {
+                <button (click)="setupGrid(); activeTab.set('measurements')" class="px-4 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors">
+                  Start New Project
+                </button>
+              }
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               @for (project of projects(); track project.id) {
+                 <div class="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-slate-50 flex flex-col justify-between">
+                   <div>
+                     <h4 class="font-bold text-lg text-slate-900 truncate">{{ project.name }}</h4>
+                     <p class="text-xs text-slate-500 mb-4">Last Modified: {{ project.lastModified | date:'medium' }}</p>
+                     <div class="flex flex-wrap gap-2 mb-4">
+                       <span class="bg-white px-2 py-1 text-xs border rounded text-slate-600">
+                         Params: {{ project.calibrationOverrides ? (project.calibrationOverrides | keyvalue).length : 0 }} Configured
+                       </span>
+                     </div>
+                   </div>
+                   <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                      @if (!dataService.isReadOnly()) {
+                        <button (click)="deleteProject(project.id, $event)" class="text-red-600 text-sm font-semibold hover:underline">Delete</button>
+                      }
+                      <button (click)="loadProject(project)" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded text-sm font-semibold hover:bg-slate-50">Load</button>
+                   </div>
+                 </div>
+               } @empty {
+                 <div class="col-span-full text-center py-12 text-slate-500">
+                   No saved projects yet. Start a new project in the Measurement Analysis tab.
+                 </div>
+               }
+            </div>
+          </section>
+        }
+
+        @case ('parameters') {
+          <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+               <p class="text-sm text-slate-600">Define parameters and their global default calibration profiles.</p>
+               @if (!dataService.isReadOnly()) {
+                <button (click)="isAddingParameter.set(true)" type="button" class="px-4 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors">
+                  Add New Parameter
+                </button>
+               }
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left">
+                  <tr>
+                    <th class="p-3 font-semibold text-slate-600">Parameter</th>
+                    <th class="p-3 font-semibold text-slate-600">Unit</th>
+                    <th class="p-3 font-semibold text-slate-600">Warn Limit</th>
+                    <th class="p-3 font-semibold text-slate-600">Crit Limit</th>
+                    <th class="p-3 font-semibold text-slate-600">Global Cal. Status</th>
+                    <th class="p-3 font-semibold text-slate-600 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (param of parameters(); track param.id) {
+                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                      <td class="p-3 font-medium">{{ param.name }}</td>
+                      <td class="p-3 text-slate-500">{{ param.unit }}</td>
+                      <td class="p-1">
+                        <input type="number" [value]="param.warnLimit"
+                               [readonly]="dataService.isReadOnly()"
+                               (change)="updateParameterLimit(param, 'warnLimit', $event)"
+                               class="w-24 p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-100 read-only:text-slate-500">
+                      </td>
+                      <td class="p-1">
+                        <input type="number" [value]="param.critLimit"
+                               [readonly]="dataService.isReadOnly()"
+                               (change)="updateParameterLimit(param, 'critLimit', $event)"
+                               class="w-24 p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-100 read-only:text-slate-500">
+                      </td>
+                      <td class="p-3">
+                        @if (calibrationStatus().get(param.id)) {
+                          <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                            <span class="w-2 h-2 mr-2 bg-green-500 rounded-full"></span>
+                            Active
+                          </span>
+                        } @else {
+                          <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                             <span class="w-2 h-2 mr-2 bg-yellow-500 rounded-full"></span>
+                            Missing
+                          </span>
+                        }
+                      </td>
+                      <td class="p-3 text-right">
+                         <div class="flex items-center justify-end space-x-4">
+                          <button type="button" (click)="editingParam.set(param)" class="text-sky-600 hover:text-sky-800 font-semibold">
+                            {{ dataService.isReadOnly() ? 'View Calibration' : 'Manage Calibration' }}
+                          </button>
+                          @if (!dataService.isReadOnly()) {
+                            <button type="button" (click)="removeParameter(param)" class="text-red-600 hover:text-red-800 font-semibold">Remove</button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+
+        @case ('measurements') {
+          <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-6">
+               <div class="flex items-center space-x-4 flex-grow max-w-2xl">
+                  <label for="projectName" class="font-medium whitespace-nowrap">Project Name:</label>
+                  <input type="text" id="projectName" 
+                         [ngModel]="projectName()" 
+                         [readonly]="dataService.isReadOnly()"
+                         (ngModelChange)="projectName.set($event)" 
+                         class="flex-grow p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none read-only:bg-slate-100 read-only:text-slate-500" 
+                         placeholder="e.g. Site A - Monthly Audit">
+               </div>
+               <div class="flex space-x-3">
+                  @if (!dataService.isReadOnly()) {
+                    <button type="button" (click)="saveProject()" class="px-4 py-2 bg-white text-slate-700 border border-slate-300 font-semibold rounded-md hover:bg-slate-50 transition-colors">
+                      Save Project
+                    </button>
+                    <button type="button" (click)="runAnalysis()" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors shadow-sm">
+                      Run Analysis
+                    </button>
+                  }
+               </div>
+            </div>
+
+            @if (isGridReady()) {
+              <div class="overflow-x-auto border border-slate-300 rounded-md">
+                <table class="min-w-full border-collapse text-sm">
+                  <thead class="bg-slate-100">
+                    <tr>
+                      <th class="p-2 border-r border-b border-slate-300 w-12 text-center text-slate-500">#</th>
+                      @for (param of parameters(); track param.id; let c = $index) {
+                        <th class="p-2 border-r border-b border-slate-300 min-w-[150px] text-left align-top">
+                          <div class="flex justify-between items-start mb-1">
+                            <div>
+                              <span class="block font-bold text-slate-700">{{ param.name }}</span>
+                              <span class="text-xs text-slate-500 font-normal">Base: {{ param.unit }}</span>
+                            </div>
+                            <button (click)="openOverrideModal(param)" class="text-slate-400 hover:text-sky-600 p-1 rounded hover:bg-slate-200 transition-colors" title="Configure Calibration for this Project">
+                              <!-- Gear Icon -->
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            </button>
+                          </div>
+                          
+                          <!-- Unit Selection -->
+                          <div class="mb-2">
+                            <label class="sr-only">Input Unit</label>
+                            <select [value]="gridUnits()[c] || param.unit" 
+                                    (change)="onUnitChange(c, $event)"
+                                    [disabled]="dataService.isReadOnly()"
+                                    class="w-full text-xs p-1 border border-slate-300 rounded bg-white text-slate-700 focus:outline-none focus:border-sky-500 disabled:bg-slate-100 disabled:text-slate-500">
+                               @for(u of getAvailableUnits(param.unit); track u) {
+                                 <option [value]="u">{{ u }}</option>
+                               }
+                            </select>
+                          </div>
+
+                          <!-- Status Indicator -->
+                          <div>
+                            @if (calibrationOverrides()[param.id]) {
+                               <span class="text-[10px] bg-purple-100 text-purple-700 px-1 rounded font-medium">Custom Cal</span>
+                            } @else if (calibrationStatus().get(param.id)) {
+                               <span class="text-[10px] bg-green-100 text-green-700 px-1 rounded font-medium">Default Cal</span>
+                            } @else {
+                               <span class="text-[10px] bg-red-100 text-red-700 px-1 rounded font-medium">No Cal</span>
+                            }
+                          </div>
+                        </th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of [].constructor(gridRows()); track row; let r = $index) {
+                      <tr class="bg-white">
+                        <td class="p-1 border-r border-b border-slate-200 text-center font-mono text-xs text-slate-400 bg-slate-50">{{ r + 1 }}</td>
+                        @for (param of parameters(); track param.id; let c = $index) {
+                          <td class="p-0 border-r border-b border-slate-200 relative">
+                            <input type="number" 
+                                   [value]="gridData()[c]?.[r] || ''"
+                                   [readonly]="dataService.isReadOnly()"
+                                   class="w-full h-full p-2 bg-white focus:bg-sky-50 focus:outline-none text-right font-mono text-sm read-only:bg-slate-50 read-only:text-slate-500"
+                                   (input)="onGridInput(c, r, $event)">
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (!dataService.isReadOnly()) {
+                <p class="text-xs text-slate-500 mt-2 text-right">Tip: Select input units per column. Readings are auto-converted to the base unit during analysis.</p>
+              }
+            } @else {
+              <div class="text-center p-8 bg-slate-50 rounded-md">
+                <p class="text-slate-600">Loading parameters...</p>
+              </div>
+            }
+          </section>
+        }
+
+        @case ('results') {
+          <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left">
+                  <tr>
+                    <th class="p-3 font-semibold text-slate-600">Project</th>
+                    <th class="p-3 font-semibold text-slate-600">Param</th>
+                    <th class="p-3 font-semibold text-slate-600">Device Used</th>
+                    <th class="p-3 font-semibold text-slate-600">Mean</th>
+                    <th class="p-3 font-semibold text-slate-600">Exp. Uncertainty</th>
+                    <th class="p-3 font-semibold text-slate-600">Status</th>
+                    <th class="p-3 font-semibold text-slate-600">Date</th>
+                    <th class="p-3 font-semibold text-slate-600 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (result of results(); track result.id) {
+                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                      <td class="p-3 max-w-[150px] truncate" title="{{result.project}}">{{ result.project }}</td>
+                      <td class="p-3 font-medium">{{ result.param }}</td>
+                      <td class="p-3 text-xs text-slate-500">
+                        @if(result.calibrationSnapshot) {
+                          {{ result.calibrationSnapshot.device }} ({{ result.calibrationSnapshot.source }})
+                        } @else {
+                          Unknown
+                        }
+                      </td>
+                      <td class="p-3 font-mono">{{ result.mean.toFixed(4) }}</td>
+                      <td class="p-3 font-mono">&plusmn; {{ result.uExp.toFixed(4) }}</td>
+                      <td class="p-3">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full" [class]="getResultStatusClass(result.status)">
+                          {{ result.status }}
+                        </span>
+                      </td>
+                      <td class="p-3 text-slate-500 text-xs">{{ result.timestamp | date:'short' }}</td>
+                      <td class="p-3 text-right">
+                        <button type="button" (click)="viewingResult.set(result)" class="text-sky-600 hover:text-sky-800 font-semibold">View</button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" class="text-center p-8 text-slate-500">No results yet. Run an analysis to see data here.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+
+        @case ('documentation') {
+           <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 prose max-w-none prose-sky">
+             <h3>App Documentation</h3>
+             <p>Use the <strong>Projects</strong> tab to manage different analysis sessions.</p>
+             
+             <h4>Calibration Handling</h4>
+             <p><strong>Universal vs. Specific Calibration:</strong> By default, parameters use the "Active" profile set in the Parameters tab. To use a different device or override uncertainty values for a specific project, click the gear icon in the table header of the Measurement Analysis tab.</p>
+             
+             <h4>Formulas & Unit Conversions</h4>
+             <p>This application automatically handles unit conversions so you can input raw readings as they appear on your instrument.</p>
+             <ul>
+               <li><strong>Concentration (ppm/ppb):</strong> <code>1 ppm = 1000 ppb</code>.</li>
+               <li><strong>Mass Concentration (mg/µg):</strong> <code>1 mg/m³ = 1000 µg/m³</code>.</li>
+               <li><strong>Temperature:</strong>
+                 <ul>
+                   <li><code>K = °C + 273.15</code></li>
+                   <li><code>°F = (°C × 9/5) + 32</code></li>
+                 </ul>
+               </li>
+             </ul>
+             <p><strong>Note:</strong> All uncertainty calculations are performed <em>after</em> the readings have been converted to the parameter's base unit.</p>
+           </section>
+        }
+      }
+    </div>
+
+    <!-- Calibration Override Modal -->
+    @if (overrideParam(); as param) {
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md" (click)="$event.stopPropagation()">
+          <header class="flex items-center justify-between p-4 border-b border-slate-200">
+             <h3 class="font-bold text-lg">Calibration for {{ param.name }}</h3>
+             <button (click)="overrideParam.set(null)" class="text-slate-400 hover:text-slate-600">Close</button>
+          </header>
+          
+          <div class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+             <p class="text-sm text-slate-600 mb-2">
+               Select which calibration profile to use for this specific project. This will not affect the global default.
+             </p>
+
+             <!-- History Selection -->
+             <div class="space-y-2">
+               <label class="text-xs font-bold text-slate-500 uppercase">From History</label>
+               @for (cal of getAvailableCalibrations(param.id); track cal.id) {
+                 <button (click)="useHistoricalCalibration(cal)" class="w-full text-left p-2 border rounded hover:bg-sky-50 flex justify-between items-center text-sm">
+                   <span>
+                     <span class="font-semibold block">{{ cal.device }}</span>
+                     <span class="text-xs text-slate-500">Serial: {{ cal.serial }} | {{ cal.date }}</span>
+                   </span>
+                   @if(cal.active) { <span class="text-[10px] bg-green-100 text-green-700 px-1 rounded">Active</span> }
+                 </button>
+               }
+             </div>
+             
+             <div class="border-t pt-4">
+               <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Custom Override Values</label>
+               <div class="grid grid-cols-2 gap-2 text-sm">
+                 <div>
+                    <label class="block text-xs text-slate-500">Device Name</label>
+                    <input [(ngModel)]="overrideFormState().device" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+                 <div>
+                    <label class="block text-xs text-slate-500">Serial</label>
+                    <input [(ngModel)]="overrideFormState().serial" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+                 <div>
+                    <label class="block text-xs text-slate-500">Cert Unc (U)</label>
+                    <input type="number" [(ngModel)]="overrideFormState().certUnc" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+                 <div>
+                    <label class="block text-xs text-slate-500">Resolution</label>
+                    <input type="number" [(ngModel)]="overrideFormState().resolution" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+                 <div>
+                    <label class="block text-xs text-slate-500">Drift</label>
+                    <input type="number" [(ngModel)]="overrideFormState().drift" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+                 <div>
+                    <label class="block text-xs text-slate-500">Accuracy</label>
+                    <input type="number" [(ngModel)]="overrideFormState().accuracy" [readonly]="dataService.isReadOnly()" class="w-full border p-1 rounded bg-white read-only:bg-slate-100">
+                 </div>
+               </div>
+             </div>
+          </div>
+
+          <footer class="p-4 bg-slate-50 border-t flex justify-between">
+             @if (!dataService.isReadOnly()) {
+               <button (click)="clearOverride(param.id)" class="text-red-600 text-sm font-semibold hover:underline">Reset to Default</button>
+               <button (click)="saveOverride(overrideFormState() || {})" class="bg-sky-600 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-sky-700">Apply Override</button>
+             } @else {
+               <span class="text-xs text-slate-500 italic">Read-only mode enabled. Overrides cannot be changed.</span>
+               <button (click)="overrideParam.set(null)" class="bg-white border px-4 py-2 rounded text-sm hover:bg-slate-50">Close</button>
+             }
+          </footer>
+        </div>
+      </div>
+    }
+
+    <!-- Add Parameter Modal -->
+    @if (isAddingParameter()) {
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg" (click)="$event.stopPropagation()">
+          <form #paramForm="ngForm" (ngSubmit)="handleSaveParameter(paramForm)">
+            <header class="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 class="text-xl font-semibold">Add New Parameter</h3>
+              <button type="button" (click)="isAddingParameter.set(false)" class="text-slate-400 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </header>
+            <div class="p-6 space-y-4">
+              <div>
+                <label for="paramName" class="block text-sm font-medium text-slate-700">Parameter Name</label>
+                <input type="text" id="paramName" name="name" ngModel required class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+              </div>
+               <div>
+                <label for="paramUnit" class="block text-sm font-medium text-slate-700">Unit</label>
+                <input type="text" id="paramUnit" name="unit" ngModel required class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                 <div>
+                  <label for="paramWarn" class="block text-sm font-medium text-slate-700">Warning Limit</label>
+                  <input type="number" id="paramWarn" name="warnLimit" ngModel class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+                 <div>
+                  <label for="paramCrit" class="block text-sm font-medium text-slate-700">Critical Limit</label>
+                  <input type="number" id="paramCrit" name="critLimit" ngModel class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+            <footer class="flex justify-end items-center gap-4 p-4 bg-slate-50 border-t border-slate-200">
+              <button type="button" (click)="isAddingParameter.set(false)" class="px-4 py-2 bg-white text-slate-700 font-semibold border border-slate-300 rounded-md hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" [disabled]="paramForm.invalid" class="px-6 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors disabled:bg-slate-400 disabled:cursor-not-allowed">
+                Save Parameter
+              </button>
+            </footer>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Calibration Modal (Global) -->
+    @if (editingParam(); as param) {
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <app-calibration 
+            [parameter]="param" 
+            (save)="handleSaveCalibration($event)"
+            (cancel)="editingParam.set(null)"
+            (remove)="handleRemoveCalibration($event)">
+          </app-calibration>
+        </div>
+      </div>
+    }
+
+    <!-- Analysis Details Modal -->
+    @if (viewingResult(); as result) {
+      <div class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50" (click)="viewingResult.set(null)">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+          <header class="flex items-center justify-between p-4 border-b border-slate-200">
+            <h3 class="text-xl font-semibold">
+              Analysis Details
+            </h3>
+            <button type="button" (click)="viewingResult.set(null)" class="text-slate-400 hover:text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </header>
+          <div class="p-6 overflow-y-auto space-y-6">
+            <!-- Summary -->
+            <div>
+              <h4 class="text-lg font-semibold mb-2">Summary</h4>
+              <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <span class="text-slate-500">Project:</span><span class="font-medium">{{ result.project }}</span>
+                <span class="text-slate-500">Parameter:</span><span class="font-medium">{{ result.param }}</span>
+                <span class="text-slate-500">Timestamp:</span><span class="font-medium">{{ result.timestamp | date:'medium' }}</span>
+                <span class="text-slate-500">Status:</span>
+                <span class="font-medium px-2 py-0.5 text-xs rounded-full w-min" [class]="getResultStatusClass(result.status)">{{ result.status }}</span>
+                <span class="text-slate-500">Mean:</span><span class="font-mono">{{ result.mean.toFixed(4) }}</span>
+                <span class="text-slate-500">Exp. Uncertainty (U):</span><span class="font-mono">&plusmn; {{ result.uExp.toFixed(4) }}</span>
+                <span class="text-slate-500">Device Snapshot:</span><span class="font-medium text-xs">{{ result.calibrationSnapshot?.device || 'Unknown' }} ({{ result.calibrationSnapshot?.serial || 'N/A' }})</span>
+              </div>
+            </div>
+            <!-- Raw Data -->
+            <div>
+              <h4 class="text-lg font-semibold mb-2 border-t pt-4">Raw Measurement Data ({{result.readings.length}} readings)</h4>
+              <div class="bg-slate-50 p-3 rounded-md max-h-48 overflow-y-auto">
+                <ul class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 text-sm font-mono">
+                  @for (reading of result.readings; track $index) {
+                    <li>{{ reading }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+          <footer class="flex justify-end items-center gap-4 p-4 bg-slate-50 border-t border-slate-200">
+            <button type="button" (click)="viewingResult.set(null)" class="px-4 py-2 bg-sky-600 text-white font-semibold border border-slate-300 rounded-md hover:bg-sky-700 transition-colors">
+              Close
+            </button>
+          </footer>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- VIEW: Settings -->
+  @if (dataService.currentView() === 'settings') {
+    <header class="mb-6">
+      <h2 class="text-3xl font-bold text-slate-900">App Settings</h2>
+      <p class="text-slate-500 mt-1">Configure your user profile and application preferences.</p>
+    </header>
+
+    <div class="max-w-2xl space-y-6">
+      <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">User Profile</h3>
+        <div class="space-y-4">
+           <div>
+             <label class="block text-sm font-medium text-slate-700">Username</label>
+             <input type="text" [(ngModel)]="settingsForm().newUsername" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+           </div>
+           <div>
+             <label class="block text-sm font-medium text-slate-700">Password</label>
+             <input type="password" [(ngModel)]="settingsForm().newPassword" class="mt-1 block w-full p-2 border bg-white rounded-md focus:ring-2 focus:ring-sky-500 focus:outline-none">
+           </div>
+           <div class="pt-2">
+             <button (click)="saveSettings()" class="px-4 py-2 bg-sky-600 text-white font-semibold rounded-md hover:bg-sky-700 transition-colors">
+               Update Profile
+             </button>
+           </div>
+        </div>
+      </section>
+
+      <section class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Data Management</h3>
+        <p class="text-sm text-slate-600 mb-4">Resetting the application will clear all measurements, projects, and custom parameters. This action cannot be undone.</p>
+        @if (!dataService.isReadOnly()) {
+          <button (click)="setupGrid(); activeTab.set('measurements'); alert('Workspace cleared.')" class="px-4 py-2 bg-white border border-red-300 text-red-700 font-semibold rounded-md hover:bg-red-50 transition-colors">
+            Clear Current Workspace
+          </button>
+        } @else {
+          <p class="text-xs text-red-600 font-semibold bg-red-50 p-2 rounded">Action disabled in Auditor Mode.</p>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- VIEW: About -->
+  @if (dataService.currentView() === 'about') {
+    <header class="mb-6">
+      <h2 class="text-3xl font-bold text-slate-900">About SmartLab</h2>
+      <p class="text-slate-500 mt-1">Version 0.6</p>
+    </header>
+
+    <div class="max-w-2xl bg-white p-8 rounded-lg shadow-sm border border-slate-200">
+       <div class="flex items-center gap-4 mb-8">
+         <div class="h-16 w-16 bg-sky-100 rounded-full flex items-center justify-center text-sky-600">
+           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+         </div>
+         <div>
+           <h3 class="text-2xl font-bold text-slate-900">SmartLab Enterprise</h3>
+           <p class="text-slate-500">ISO 17025 Uncertainty Assistant</p>
+         </div>
+       </div>
+
+       <div class="space-y-6 text-slate-700">
+         <p>
+           SmartLab is a specialized tool designed to assist laboratory technicians and quality managers in calculating measurement uncertainty according to ISO 17025 standards. It provides a robust framework for managing calibration profiles, analyzing measurement data, and generating reports.
+         </p>
+
+         <div class="border-t border-slate-100 pt-6">
+           <h4 class="font-semibold text-slate-900 mb-4">Developer Contact</h4>
+           <div class="space-y-2 text-sm">
+             <div class="flex items-start gap-3">
+               <span class="font-medium min-w-[100px] text-slate-500">Developer:</span>
+               <span>Eng. Mohammad Telfah</span>
+             </div>
+             <div class="flex items-start gap-3">
+               <span class="font-medium min-w-[100px] text-slate-500">Phone:</span>
+               <span>+962789841842</span>
+             </div>
+             <div class="flex items-start gap-3">
+               <span class="font-medium min-w-[100px] text-slate-500">Location:</span>
+               <span>Amman - Jordan</span>
+             </div>
+           </div>
+         </div>
+
+         <div class="border-t border-slate-100 pt-6 mt-6">
+            <p class="text-xs text-slate-400 font-mono">
+              Eng. Mohammad Telfah copywrite Version 0.6
+            </p>
+         </div>
+       </div>
+    </div>
+  }
+</div>

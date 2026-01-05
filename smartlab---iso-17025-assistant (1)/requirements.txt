@@ -1,0 +1,4 @@
+
+PyQt6==6.6.1
+reportlab==4.0.9
+Pillow==10.2.0

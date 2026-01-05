@@ -1,0 +1,5 @@
+{
+  "name": "SmartLab - ISO 17025 Assistant",
+  "description": "A web-based laboratory assistant for ISO 17025 uncertainty calculations.",
+  "requestFramePermissions": []
+}
